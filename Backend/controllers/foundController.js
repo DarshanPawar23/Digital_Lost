@@ -1,7 +1,6 @@
 const db = require('../config/db'); 
 const fs = require('fs'); 
 
-// Utility function to safely delete a file (prevents sync errors)
 const deleteFile = (path) => {
     try {
         if (path && fs.existsSync(path)) {
