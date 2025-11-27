@@ -1,14 +1,34 @@
 const db = require('../config/db'); 
 const fs = require('fs'); 
 
-exports.uploadFoundItem = async (req, res) => {
+// Utility function to safely delete a file (prevents sync errors)
+const deleteFile = (path) => {
     try {
-        const imagePath = req.file ? req.file.path : null; 
+        if (path && fs.existsSync(path)) {
+            fs.unlinkSync(path);
+        }
+    } catch (err) {
+        console.error("Error cleaning up file:", err);
+    }
+};
 
-        const { description, location_desc, contact_no, city, category, latitude, longitude } = req.body;
+exports.uploadFoundItem = async (req, res) => {
+    const imagePath = req.file ? req.file.path : null; 
+
+    try {
+        const { 
+            description, 
+            location_desc, 
+            contact_no, 
+            city, 
+            category, 
+            latitude, 
+            longitude 
+           
+        } = req.body;
         
         if (!imagePath || !description || !contact_no || !category) {
-            if (imagePath) fs.unlinkSync(imagePath); 
+            if (imagePath) deleteFile(imagePath); 
             return res.status(400).json({ message: 'Missing required item details or image.' });
         }
         const query = `
@@ -25,19 +45,19 @@ exports.uploadFoundItem = async (req, res) => {
             latitude || null, 
             longitude || null,
             imagePath, 
-            contact_no
+            contact_no 
         ];
+        
         await db.execute(query, values); 
-
         res.status(201).json({ 
             message: 'Found item successfully posted!', 
             image_path: imagePath 
         });
 
     } catch (error) {
-        if (req.file && req.file.path) {
-            fs.unlinkSync(req.file.path);
-        }
+
+        deleteFile(imagePath); 
+        
         console.error('Error posting found item:', error);
         res.status(500).json({ 
             message: 'Server error during upload.', 
